@@ -1,0 +1,97 @@
+--GO
+--USE TestDB;
+--GO
+-- This is usually more common when Modifying a Database ... to Drop individual Tables before 
+--   creating them...   Again so you can test your Create table statements before running in production :
+--     
+--IF OBJECT_ID('dbo.ProjectEmployees ') IS NOT NULL
+--DROP TABLE dbo.ProjectEmployees ;
+--GO
+--IF OBJECT_ID('dbo.Projects') IS NOT NULL
+--DROP TABLE dbo.Projects;
+--GO
+--IF OBJECT_ID('dbo.Employees') IS NOT NULL
+--DROP TABLE dbo.Employees;
+--GO
+--
+--/* If you are building a brand New Database, This is the easiest way to test your Create
+--     Table code ... ie. to Drop the New database 
+--     & recreate the Database - vs dropping & Creating individual Tables ...
+USE MASTER;
+GO
+
+DROP DATABASE TestDBProjectStart;
+GO
+--*/
+
+CREATE DATABASE TestDBProjectStart;
+GO
+
+USE TestDBProjectStart
+
+
+CREATE TABLE Employees(
+	EmployeeID INT IDENTITY CONSTRAINT PK_Employee PRIMARY KEY,
+	FirstName NVARCHAR(50) NOT NULL,
+	MiddleName NVARCHAR(50) NULL,
+	LastName NVARCHAR(50) NOT NULL,
+	DateofBirth DATE NOT NULL,
+	EmployeeSIN char(9) NOT NULL,
+	ManagerEmployeeID INT NULL,
+	HireDate  DATE NOT NULL,	
+-- 	Age INT NOT NULL -- Violates 3NF - Best not to Store, as this Can be determined/calculated from Employee data,
+
+
+CONSTRAINT FK_Employees_Employees FOREIGN KEY ( ManagerEmployeeID ) 
+                                              REFERENCES Employees ( EmployeeID )
+
+);
+
+GO
+
+
+--   NOTE : Projects is NOT part of the Project1 requirements ... this is just SAMPLE / Example SQL code ... 
+
+CREATE TABLE Projects (
+
+ProjectID INT NOT NULL,
+
+ProjectNumber VARCHAR(10) NOT NULL,
+
+ProjectDesc VARCHAR(250) NULL,
+
+TargetEndDate DATE,
+
+IsProjectComplete BIT NOT NULL
+
+
+
+CONSTRAINT PK_Projects PRIMARY KEY ( ProjectID )
+
+);
+
+GO
+
+
+
+CREATE TABLE ProjectEmployees (
+
+ProjectEmployeeID  INT IDENTITY,  -- Surrogate Primary Key is a Best Practise (even for Junction Tables) 
+
+ProjectID INT NOT NULL,
+
+EmployeeID INT NOT NULL,
+
+--CONSTRAINT PK_ProjectResources PRIMARY KEY ( ProjectID, EmployeeID ), - Concatenated Primary Key Not a Best Practise
+CONSTRAINT PK_ProjectEmployee PRIMARY KEY ( ProjectEmployeeID ),
+CONSTRAINT FK_ProjectResources_Projects FOREIGN KEY ( ProjectID ) 
+                                           REFERENCES Projects ( ProjectID ),
+
+CONSTRAINT FK_ProjectResources_Employees FOREIGN KEY ( EmployeeID ) 
+                                                       REFERENCES Employees ( EmployeeID )
+
+);
+
+GO
+-- 
+--  This SQL is an example of they type of SQL code you will need to Create for the specific Project 1 requirements.

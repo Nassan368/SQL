@@ -1,0 +1,106 @@
+--/*
+Use Master;
+GO
+Alter database FanshaweDroneShare set single_user with rollback immediate;  
+GO
+DROP Database FanshaweDroneShare;  
+GO 
+CREATE DATABASE FanshaweDroneShare;  
+GO
+USE FanshaweDroneShare;
+GO
+-- Station
+CREATE TABLE dbo.Station (
+    StationID   INT IDENTITY CONSTRAINT PK_Station PRIMARY KEY,
+    StationName NVARCHAR(50) NOT NULL,  
+    MaxCapacity    INT NOT NULL
+    -- NOTE: Current count should not be included. Violates 3NF.
+);
+
+-- Pilot
+CREATE TABLE dbo.Pilot (
+    PilotID          INT IDENTITY CONSTRAINT PK_Pilot PRIMARY KEY,   
+    FirstName        NVARCHAR(50) NOT NULL,
+    LastName         NVARCHAR(50) NOT NULL,
+    TransportCanadaCertNumber    NVARCHAR(80) NOT NULL, 
+    PilotSIN         CHAR(9) NOT NULL, 
+    DateOfBirth      DATE NOT NULL
+);
+
+-- EquipmentType
+CREATE TABLE dbo.EquipmentType (
+    EquipmentTypeID   INT IDENTITY CONSTRAINT PK_EquipmentType PRIMARY KEY,
+    EquipmentTypeName NVARCHAR(50) NOT NULL 
+
+);
+-- Manufacturer
+CREATE TABLE dbo.Manufacturer (
+    ManufacturerID   INT IDENTITY CONSTRAINT PK_Manufacturer PRIMARY KEY,
+    ManufacturerName NVARCHAR(80) NOT NULL 
+
+);
+-- Model
+CREATE TABLE dbo.Model (
+    ModelID   INT IDENTITY CONSTRAINT PK_Model PRIMARY KEY,
+    ModelName NVARCHAR(80) NOT NULL,
+    ManufacturerID   INT NULL CONSTRAINT FK_Manufacturer  REFERENCES dbo.Manufacturer  (ManufacturerID ), 
+
+);
+-- DroneEquipment
+CREATE TABLE dbo.DroneEquipment (
+    DroneEquipmentID INT IDENTITY CONSTRAINT PK_DroneEquipment PRIMARY KEY,
+    HomeStationID    INT NOT NULL CONSTRAINT FK_DroneEquipment_Station_Home REFERENCES dbo.Station ( StationID ),
+    CurrentStationID INT NOT NULL CONSTRAINT FK_DroneEquipment_Station_Current REFERENCES dbo.Station ( StationID ),
+    PilotID          INT NULL CONSTRAINT FK_DroneEquipment_Pilot REFERENCES dbo.Pilot ( PilotID ),
+    EquipmentTypeID  INT NULL CONSTRAINT FK_DroneEquipment_EquipmentTypeID  REFERENCES dbo.EquipmentType ( EquipmentTypeID  ),
+    TransportCanadaIdentMarking    NVARCHAR(80) NULL,    -- Accessory equipment does not have to have this marking, so can be NULL...
+    ModelID          INT NULL CONSTRAINT FK_DroneEquipment_Model  REFERENCES dbo.Model ( ModelID ),
+    Weight           INT NOT NULL,
+    SerialNumber     NVARCHAR(50) NOT NULL,
+    ManufacturedDate DATETIME NULL
+);
+
+-- Account
+CREATE TABLE dbo.Account (
+    AccountID       INT IDENTITY CONSTRAINT PK_Accounts PRIMARY KEY,
+    PrimaryPilotID  INT NOT NULL CONSTRAINT FK_Account_Pilot REFERENCES dbo.Pilot ( PilotID ),
+    AccountNumber   CHAR(20) NOT NULL,
+    CurrentBalance  MONEY NOT NULL,
+    AccountOpenDate DATE NOT NULL
+);
+
+-- PilotAccount
+CREATE TABLE dbo.PilotAccount (
+    PilotAccountID INT IDENTITY,
+    PilotID        INT NOT NULL,
+    AccountID      INT NOT NULL,
+    PilotAccountStartDate DATE NOT NULL,
+
+    -- Just an example of a different syntax for creating constraints – consistency is KEY (Remember to NAME all Constraints)
+    CONSTRAINT PK_PilotAccount PRIMARY KEY ( PilotAccountID ),    
+    CONSTRAINT FK_PilotAccount_Pilot FOREIGN KEY ( PilotID ) REFERENCES dbo.Pilot ( PilotID ),
+    CONSTRAINT FK_PilotAccount_Account FOREIGN KEY ( AccountID ) REFERENCES dbo.Account ( AccountID )
+);
+
+-- Address
+CREATE TABLE dbo.Address (
+    AddressID INT IDENTITY CONSTRAINT PK_Address PRIMARY KEY,
+    Street    NVARCHAR(50),
+    City      NVARCHAR(50),
+    Province  NVARCHAR(50),
+    PostalCode    CHAR(6)
+);
+
+-- PilotAddress
+CREATE TABLE dbo.PilotAddress (
+    PilotAddressID INT IDENTITY,
+    PilotID        INT NOT NULL,
+    AddressID      INT NOT NULL,
+    PilotAddressStartDate DATE NOT NULL,
+     -- Notice Junction tables should always have a surrogate PrimaryKey (same as Name of table..ID, PLUS the 2 ForeignKeys from the 2 tables being joined – we will see why this is important when creating Indexes.. vs using a composite of the 2 ForeignKeys as the PrimaryKey..) 
+
+    CONSTRAINT PK_PilotAddress PRIMARY KEY ( PilotAddressID ),
+    CONSTRAINT FK_PilotAddress_Pilot FOREIGN KEY ( PilotID ) REFERENCES dbo.Pilot ( PilotID ),
+    CONSTRAINT FK_PilotAddress_Address FOREIGN KEY ( AddressID ) REFERENCES dbo.Address ( AddressID )
+);
+GO
